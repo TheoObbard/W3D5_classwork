@@ -39,27 +39,28 @@ class SQLObject
 
   def self.all
     all_data = DBConnection.execute(<<-SQL)
-      SELECT "#{self.table_name}.*"
-      FROM "#{self.table_name}"
+      SELECT *
+      FROM #{self.table_name}
     SQL
-    self.class.parse_all(all_data)
+    self.parse_all(all_data)
   end
 
   def self.parse_all(results)
     lst = []
-    results.each do |k, v|
-      lst << SQLObject.new(all_data)
+    results.each do |datum|
+      lst << self.new(results = datum)
     end
     lst
   end
 
   def self.find(id)
-    # @t ||= DBConnection.execute2(<<-SQL, id)
-    #     SELECT *
-    #     FROM "#{self.table_name}"
-    #     WHERE id = ?
-    #   SQL
-    # SQLObject.new(@t)
+    result = DBConnection.execute(<<-SQL, id).last
+        SELECT *
+        FROM "#{self.table_name}"
+        WHERE id = ?
+    SQL
+    return nil unless result
+    self.new(result)
   end
 
   def initialize(params = {})
@@ -76,11 +77,25 @@ class SQLObject
   end
 
   def attribute_values
-    # ...
+    result = []
+    attributes.each do |k, v|
+      result << v
+    end
+    result
   end
 
   def insert
-    # ...
+    col_names = attributes.columns.join(', ')
+    question_marks = []
+    self.columns.each do |_|
+      question_marks << '?'
+    end
+    question_marks.join(', ')
+
+    DBConnection.execute(<<-SQL, col_names, question_marks)
+      INSERT INTO col_names
+      VALUES question_marks
+    SQL
   end
 
   def update
